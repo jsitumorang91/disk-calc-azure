@@ -1,0 +1,12 @@
+{
+  "name": "disk-calc-api",
+  "version": "1.0.0",
+  "description": "Azure Functions API for the BBB disk space calculator (saved scenarios CRUD)",
+  "private": true,
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@azure/cosmos": "^4.1.1"
+  }
+}

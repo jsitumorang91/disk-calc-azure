@@ -1,0 +1,21 @@
+# Functions local dev settings (contains secrets)
+api/local.settings.json
+
+# Node deps (installed in CI)
+api/node_modules/
+node_modules/
+
+# Function build artifacts
+api/bin/
+api/obj/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/
+.idea/
+
+# Logs
+*.log

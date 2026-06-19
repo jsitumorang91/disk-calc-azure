@@ -1,0 +1,1662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BITbyBIT — Disk Space Calculator v0.3 (cloud)</title>
+<style>
+:root {
+  --bg:           #F3F4F6;
+  --surface:      #FFFFFF;
+  --border:       #E5E7EB;
+  --text:         #374151;
+  --text-muted:   #6B7280;
+  --text-heading: #274C84;
+  --accent:       #ABCB39;
+  --nav:          #274C84;
+  --success:      #10B981;
+  --alert:        #EF4444;
+  --row-alt:      #F9FAFB;
+  --code-bg:      #F3F4F6;
+}
+[data-theme="dark"] {
+  --bg:           #0D1B2A;
+  --surface:      #112236;
+  --border:       #1E3A5F;
+  --text:         #F3F4F6;
+  --text-muted:   #9CA3AF;
+  --text-heading: #ABCB39;
+  --accent:       #ABCB39;
+  --nav:          #274C84;
+  --success:      #10B981;
+  --alert:        #EF4444;
+  --row-alt:      #0F1F32;
+  --code-bg:      #0F1F32;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; padding: 0;
+  background: var(--bg); color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 15px; line-height: 1.5;
+  transition: background 0.2s, color 0.2s;
+}
+nav.topbar {
+  background: var(--nav); color: #fff;
+  padding: 14px 24px;
+  display: flex; align-items: center; justify-content: space-between;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  flex-wrap: wrap; gap: 12px;
+}
+nav.topbar .brand { display: flex; align-items: center; gap: 14px; }
+nav.topbar img { height: 32px; }
+nav.topbar .app-title { font-size: 16px; font-weight: 600; color: #fff; }
+nav.topbar .app-version {
+  font-size: 11px; color: rgba(255,255,255,0.6); margin-left: 6px;
+  font-weight: 500;
+}
+.theme-toggle {
+  background: transparent; border: 1px solid rgba(255,255,255,0.4);
+  color: #fff; padding: 6px 12px; border-radius: 6px;
+  cursor: pointer; font-size: 13px;
+  font-family: inherit;
+}
+.theme-toggle:hover { background: rgba(255,255,255,0.1); }
+
+.auth-state { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.auth-state .auth-user {
+  color: rgba(255,255,255,0.9);
+  max-width: 180px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.auth-state .auth-link {
+  color: #fff; text-decoration: none;
+  border: 1px solid rgba(255,255,255,0.4); padding: 5px 10px; border-radius: 6px;
+}
+.auth-state .auth-link:hover { background: rgba(255,255,255,0.1); }
+.auth-state .auth-cta { background: var(--accent); color: #0D1B2A; border-color: transparent; font-weight: 600; }
+.auth-state .auth-cta:hover { filter: brightness(1.05); background: var(--accent); }
+
+.mode-banner {
+  font-size: 13px; padding: 8px 14px; border-radius: 6px;
+  background: var(--row-alt); border: 1px solid var(--border);
+  color: var(--text-muted); margin-bottom: 12px;
+}
+.mode-banner.cloud { border-left: 3px solid var(--success); }
+.mode-banner.unauth { border-left: 3px solid var(--accent); }
+.mode-banner.local { border-left: 3px solid var(--text-muted); }
+
+main {
+  max-width: 1100px; margin: 0 auto; padding: 24px;
+}
+.page-header { margin-bottom: 18px; }
+.page-header h1 {
+  color: var(--text-heading); font-size: 26px; margin: 0 0 6px 0; font-weight: 700;
+}
+.page-header p { margin: 0; color: var(--text-muted); max-width: 760px; }
+
+/* Settings bar */
+.settings-bar {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 18px;
+  margin-bottom: 18px;
+  display: flex; flex-wrap: wrap; gap: 18px; align-items: center;
+  font-size: 13px;
+}
+.settings-bar .label {
+  font-weight: 700; color: var(--text-heading);
+  text-transform: uppercase; letter-spacing: 0.04em; font-size: 11px;
+}
+.settings-bar select, .settings-bar input[type="number"] {
+  padding: 4px 8px; border: 1px solid var(--border); border-radius: 4px;
+  background: var(--surface); color: var(--text); font-family: inherit; font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.settings-bar .field { display: flex; align-items: center; gap: 6px; }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px 24px;
+  margin-bottom: 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+.card h2 {
+  color: var(--text-heading); margin: 0 0 6px 0;
+  font-size: 18px; font-weight: 700;
+}
+.card .card-sub { margin: 0 0 16px 0; color: var(--text-muted); font-size: 14px; }
+
+/* Subtabs */
+.subtabs {
+  display: flex; gap: 4px; margin-bottom: 18px;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+.subtab {
+  background: transparent; border: none; padding: 8px 14px;
+  cursor: pointer; font-family: inherit; font-size: 14px;
+  color: var(--text-muted); font-weight: 600;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+.subtab.active {
+  color: var(--text-heading);
+  border-bottom-color: var(--accent);
+}
+.subtab:hover:not(.active) { color: var(--text); }
+.pane[hidden] { display: none; }
+
+.input-row {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 14px; margin-bottom: 18px;
+}
+.input-group label {
+  display: block; font-size: 11px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.04em;
+  color: var(--text-heading); margin-bottom: 4px;
+}
+.input-group input, .input-group select {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 14px;
+  font-family: inherit;
+  font-variant-numeric: tabular-nums;
+}
+.input-group input:focus, .input-group select:focus {
+  outline: none; border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(171,203,57,0.25);
+}
+
+.results-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+  margin-bottom: 16px;
+}
+@media (max-width: 720px) {
+  .results-grid { grid-template-columns: 1fr; }
+}
+.result-block {
+  border: 1px solid var(--border); border-radius: 6px;
+  padding: 14px; background: var(--row-alt);
+}
+.result-block .label {
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em;
+  font-weight: 700; color: var(--text-muted); margin-bottom: 6px;
+}
+.result-block .value {
+  font-size: 28px; font-weight: 700; color: var(--text-heading);
+  font-variant-numeric: tabular-nums; line-height: 1.1;
+}
+.result-block .secondary {
+  font-size: 13px; color: var(--text-muted); margin-top: 4px;
+  font-variant-numeric: tabular-nums;
+}
+.progress {
+  margin-top: 10px;
+  height: 8px; background: var(--border); border-radius: 4px; overflow: hidden;
+}
+.progress > div {
+  height: 100%; border-radius: 4px;
+  transition: width 0.3s ease, background 0.2s;
+}
+.progress.ok    > div { background: var(--success); }
+.progress.warn  > div { background: var(--accent); }
+.progress.crit  > div { background: var(--alert); }
+
+.summary-table, .disk-table, .fcast-table, .hist-table, .preset-table {
+  width: 100%; border-collapse: collapse;
+  font-size: 14px; font-variant-numeric: tabular-nums;
+}
+.summary-table th, .disk-table th, .fcast-table th, .hist-table th, .preset-table th {
+  background: var(--nav); color: #fff; text-align: left;
+  padding: 8px 10px; font-weight: 600; font-size: 13px;
+}
+[data-theme="dark"] .summary-table th,
+[data-theme="dark"] .disk-table th,
+[data-theme="dark"] .fcast-table th,
+[data-theme="dark"] .hist-table th,
+[data-theme="dark"] .preset-table th { background: #0F2D5C; color: var(--accent); }
+.summary-table td, .fcast-table td, .hist-table td, .preset-table td {
+  padding: 8px 10px; border-bottom: 1px solid var(--border);
+}
+.summary-table tr:nth-child(even) td, .fcast-table tr:nth-child(even) td,
+.hist-table tr:nth-child(even) td, .preset-table tr:nth-child(even) td { background: var(--row-alt); }
+.delta-pos { color: var(--success); font-weight: 600; }
+.delta-neg { color: var(--alert); font-weight: 600; }
+
+.disk-table td { padding: 6px 8px; border-bottom: 1px solid var(--border); }
+.disk-table tr:nth-child(even) td { background: var(--row-alt); }
+.disk-table input {
+  width: 100%; padding: 6px 8px; border: 1px solid var(--border); border-radius: 4px;
+  background: var(--surface); color: var(--text); font-size: 13px;
+  font-family: inherit; font-variant-numeric: tabular-nums;
+}
+.disk-table input.name-input { font-variant-numeric: normal; }
+.disk-table .compact-col { width: 100px; }
+.disk-table .name-col { width: 24%; }
+.disk-table .totals-row td {
+  background: var(--row-alt); font-weight: 700;
+  color: var(--text-heading); border-top: 2px solid var(--accent);
+}
+
+.btn {
+  border-radius: 6px; padding: 8px 16px; font-weight: 600;
+  cursor: pointer; font-size: 14px; font-family: inherit;
+  border: none; transition: filter 0.15s, transform 0.05s;
+}
+.btn:active { transform: translateY(1px); }
+.btn-primary { background: var(--accent); color: #fff; }
+[data-theme="dark"] .btn-primary { color: #0D1B2A; }
+.btn-primary:hover { filter: brightness(1.05); }
+.btn-ghost {
+  border: 2px solid var(--nav); color: var(--nav); background: transparent;
+}
+[data-theme="dark"] .btn-ghost { border-color: var(--accent); color: var(--accent); }
+.btn-ghost:hover { background: rgba(39,76,132,0.05); }
+[data-theme="dark"] .btn-ghost:hover { background: rgba(171,203,57,0.08); }
+.btn-icon {
+  background: transparent; border: none; color: var(--alert);
+  cursor: pointer; padding: 4px 8px; font-size: 16px;
+}
+.btn-icon:hover { color: #B91C1C; }
+.btn-small { padding: 4px 10px; font-size: 12px; }
+
+.toolbar { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+
+.converter-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px;
+}
+
+.badge {
+  display: inline-block; padding: 3px 10px; border-radius: 999px;
+  font-size: 12px; font-weight: 700; min-width: 64px; text-align: center;
+}
+.badge.ok   { background: var(--success); color: #fff; }
+.badge.warn { background: var(--accent); color: #0D1B2A; }
+.badge.crit { background: var(--alert);   color: #fff; }
+
+.formula-note, .code-block {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12.5px;
+  background: var(--code-bg);
+  border-left: 3px solid var(--accent);
+  padding: 8px 12px; border-radius: 4px;
+  color: var(--text-muted);
+  margin-bottom: 14px;
+}
+.code-block {
+  white-space: pre-wrap; word-break: break-word;
+  color: var(--text);
+}
+
+.fleet-summary {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 10px; margin-bottom: 16px;
+}
+.metric-card {
+  background: var(--row-alt); border: 1px solid var(--border); border-radius: 6px;
+  padding: 10px 14px;
+}
+.metric-card .metric-label {
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em;
+  font-weight: 700; color: var(--text-muted); margin-bottom: 4px;
+}
+.metric-card .metric-val {
+  font-size: 22px; font-weight: 700; color: var(--text-heading);
+  font-variant-numeric: tabular-nums;
+}
+.metric-card .metric-val.ok   { color: var(--success); }
+.metric-card .metric-val.warn { color: var(--accent); }
+[data-theme="dark"] .metric-card .metric-val.warn { color: #d4e96b; }
+.metric-card .metric-val.crit { color: var(--alert); }
+
+details.expander {
+  margin: 14px 0;
+  border: 1px solid var(--border); border-radius: 6px;
+  background: var(--row-alt);
+}
+details.expander > summary {
+  cursor: pointer; padding: 10px 14px; font-weight: 600;
+  color: var(--text-heading); list-style: none;
+  user-select: none;
+}
+details.expander > summary::before { content: '▸ '; transition: transform 0.2s; }
+details.expander[open] > summary::before { content: '▾ '; }
+details.expander > .ex-body { padding: 0 14px 14px 14px; }
+
+textarea.import-area {
+  width: 100%; min-height: 110px;
+  padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px;
+  background: var(--surface); color: var(--text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12.5px; resize: vertical;
+}
+.import-feedback {
+  margin-top: 8px; font-size: 13px;
+}
+.import-feedback.ok   { color: var(--success); }
+.import-feedback.crit { color: var(--alert); }
+
+.kv-row {
+  display: flex; align-items: center; gap: 10px;
+  margin-top: 8px; font-size: 14px;
+}
+.kv-row .k { color: var(--text-muted); }
+.kv-row .v { font-weight: 700; color: var(--text-heading); font-variant-numeric: tabular-nums; }
+
+footer.appfoot {
+  background: var(--nav); color: #fff; text-align: center;
+  padding: 16px; margin-top: 30px; font-size: 13px;
+  border-top: 3px solid var(--accent);
+}
+footer.appfoot .muted { color: rgba(255,255,255,0.7); margin-top: 4px; }
+
+@media print {
+  nav.topbar, footer.appfoot, .theme-toggle, .toolbar,
+  .btn, .btn-icon, details.expander > summary { display: none !important; }
+  details.expander > .ex-body { padding: 0 !important; }
+  details.expander { border: none !important; background: transparent !important; }
+  .card { box-shadow: none !important; page-break-inside: avoid; }
+  body { background: #fff !important; color: #000 !important; }
+}
+</style>
+</head>
+<body>
+<nav class="topbar">
+  <div class="brand">
+    <img src="https://bitxbit.com/wp-content/uploads/2025/10/logo_header.png" alt="BITbyBIT">
+    <span class="app-title">Disk Space Calculator <span class="app-version">v0.3 · cloud</span></span>
+  </div>
+  <div style="display:flex; align-items:center; gap:10px;">
+    <span id="authState" class="auth-state"></span>
+    <button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle theme">Theme</button>
+  </div>
+</nav>
+
+<main>
+  <div class="page-header">
+    <h1>Capacity Planning &amp; Storage Forecasting</h1>
+    <p>Model free-space percentages before and after adding storage, solve for required storage to hit a target, project when a disk will fill, and roll up totals across a fleet.</p>
+  </div>
+
+  <!-- Settings bar -->
+  <div class="settings-bar">
+    <span class="label">Settings:</span>
+    <div class="field">
+      <label for="setWarn" class="label">Warn %</label>
+      <input type="number" id="setWarn" value="20" min="0" max="100" step="1" style="width:60px;">
+    </div>
+    <div class="field">
+      <label for="setCrit" class="label">Critical %</label>
+      <input type="number" id="setCrit" value="10" min="0" max="100" step="1" style="width:60px;">
+    </div>
+    <div class="field">
+      <label for="setBase" class="label">Unit Base</label>
+      <select id="setBase" style="width:auto;">
+        <option value="1024" selected>Binary (1024) — Windows</option>
+        <option value="1000">Decimal (1000) — vendor labels</option>
+      </select>
+    </div>
+    <div class="field" style="margin-left:auto;">
+      <button class="btn btn-ghost btn-small" id="btnResetSettings" type="button">Reset</button>
+    </div>
+  </div>
+
+  <!-- Section 1: Capacity Planner with sub-tabs -->
+  <section class="card">
+    <h2>Capacity Planner</h2>
+    <p class="card-sub">Three modes: <strong>Forward Plan</strong> (what will my % be after adding storage?), <strong>Reverse Calc</strong> (how much do I need to add to hit a target?), and <strong>Growth Forecast</strong> (when will the disk fill at the current growth rate?).</p>
+
+    <div class="subtabs" role="tablist">
+      <button class="subtab active" data-target="paneForward" type="button">Forward Plan</button>
+      <button class="subtab"        data-target="paneReverse" type="button">Reverse Calc</button>
+      <button class="subtab"        data-target="paneForecast" type="button">Growth Forecast</button>
+    </div>
+
+    <!-- Forward Plan pane -->
+    <div class="pane" id="paneForward">
+      <div class="formula-note">
+        Free % = FreeSpace / Capacity &nbsp;·&nbsp;
+        New Free % = (FreeSpace + Added) / (Capacity + Added)
+      </div>
+      <div class="input-row">
+        <div class="input-group">
+          <label for="inpFree">Free Space (GB)</label>
+          <input type="number" id="inpFree" step="0.01" value="32.86">
+        </div>
+        <div class="input-group">
+          <label for="inpCap">Total Capacity (GB)</label>
+          <input type="number" id="inpCap" step="0.01" value="228.88">
+        </div>
+        <div class="input-group">
+          <label for="inpAdd">Add Storage (GB)</label>
+          <input type="number" id="inpAdd" step="0.01" value="40">
+        </div>
+      </div>
+
+      <div class="results-grid">
+        <div class="result-block">
+          <div class="label">Current Free Space</div>
+          <div class="value" id="outCurPct">—</div>
+          <div class="secondary" id="outCurDetail">—</div>
+          <div class="progress" id="outCurBar"><div style="width:0%"></div></div>
+        </div>
+        <div class="result-block">
+          <div class="label">After Adding Storage</div>
+          <div class="value" id="outNewPct">—</div>
+          <div class="secondary" id="outNewDetail">—</div>
+          <div class="progress" id="outNewBar"><div style="width:0%"></div></div>
+        </div>
+      </div>
+
+      <table class="summary-table">
+        <thead>
+          <tr>
+            <th>Metric</th><th>Current</th><th>After Adding</th><th>Change</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Free Space</td>
+            <td id="rowFreeCur">—</td><td id="rowFreeNew">—</td><td id="rowFreeDelta">—</td>
+          </tr>
+          <tr>
+            <td>Total Capacity</td>
+            <td id="rowCapCur">—</td><td id="rowCapNew">—</td><td id="rowCapDelta">—</td>
+          </tr>
+          <tr>
+            <td>Used Space</td>
+            <td id="rowUsedCur">—</td><td id="rowUsedNew">—</td><td id="rowUsedDelta">—</td>
+          </tr>
+          <tr>
+            <td>Free Space %</td>
+            <td id="rowPctCur">—</td><td id="rowPctNew">—</td><td id="rowPctDelta">—</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Reverse Calc pane -->
+    <div class="pane" id="paneReverse" hidden>
+      <div class="formula-note">
+        Required Add = (Target % × Capacity − FreeSpace) / (1 − Target %)
+      </div>
+      <div class="input-row">
+        <div class="input-group">
+          <label for="rvFree">Current Free (GB)</label>
+          <input type="number" id="rvFree" step="0.01" value="32.86">
+        </div>
+        <div class="input-group">
+          <label for="rvCap">Total Capacity (GB)</label>
+          <input type="number" id="rvCap" step="0.01" value="228.88">
+        </div>
+        <div class="input-group">
+          <label for="rvTarget">Target Free %</label>
+          <input type="number" id="rvTarget" step="0.5" min="0" max="99" value="25">
+        </div>
+      </div>
+
+      <div class="result-block" style="margin-bottom: 14px;">
+        <div class="label">Storage to Add</div>
+        <div class="value" id="rvResult">—</div>
+        <div class="secondary" id="rvDetail">—</div>
+      </div>
+
+      <table class="summary-table">
+        <thead>
+          <tr><th>Scenario</th><th>Free</th><th>Capacity</th><th>Free %</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Now</td>
+            <td id="rvNowFree">—</td><td id="rvNowCap">—</td><td id="rvNowPct">—</td>
+          </tr>
+          <tr>
+            <td>After Adding</td>
+            <td id="rvAfterFree">—</td><td id="rvAfterCap">—</td><td id="rvAfterPct">—</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Growth Forecast pane -->
+    <div class="pane" id="paneForecast" hidden>
+      <div class="formula-note">
+        Days to Threshold = (FreeSpace − Threshold × Capacity) / DailyGrowth
+      </div>
+      <div class="input-row">
+        <div class="input-group">
+          <label for="fcFree">Current Free (GB)</label>
+          <input type="number" id="fcFree" step="0.01" value="200">
+        </div>
+        <div class="input-group">
+          <label for="fcCap">Total Capacity (GB)</label>
+          <input type="number" id="fcCap" step="0.01" value="1000">
+        </div>
+        <div class="input-group">
+          <label for="fcGrowth">Daily Growth (GB/day)</label>
+          <input type="number" id="fcGrowth" step="0.01" value="2.5">
+        </div>
+      </div>
+
+      <details class="expander">
+        <summary>Auto-calculate growth from historical measurements</summary>
+        <div class="ex-body">
+          <p style="color: var(--text-muted); font-size: 13px; margin: 6px 0 10px 0;">
+            Enter at least two date / free-space pairs. The average daily growth rate is computed from the first and last entry.
+          </p>
+          <table class="hist-table" id="histTable">
+            <thead>
+              <tr>
+                <th style="width:30%;">Date</th>
+                <th>Free Space (GB)</th>
+                <th style="width:42px;"></th>
+              </tr>
+            </thead>
+            <tbody id="histBody"></tbody>
+          </table>
+          <div class="toolbar">
+            <button class="btn btn-primary btn-small" id="btnAddHist" type="button">+ Add data point</button>
+            <button class="btn btn-ghost btn-small"   id="btnApplyGrowth" type="button">Apply computed rate</button>
+            <div class="kv-row" style="margin-left: auto;">
+              <span class="k">Computed rate:</span>
+              <span class="v" id="histGrowth">—</span>
+            </div>
+          </div>
+        </div>
+      </details>
+
+      <table class="fcast-table">
+        <thead>
+          <tr>
+            <th>Threshold</th>
+            <th>Free GB at threshold</th>
+            <th>Days until</th>
+            <th>Projected date</th>
+          </tr>
+        </thead>
+        <tbody id="fcastBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Section 2: Multi-Disk Aggregator -->
+  <section class="card">
+    <h2>Multi-Disk Aggregator</h2>
+    <p class="card-sub">Roll up free space and capacity across several disks or volumes. Bulk-import from PowerShell or CSV, export the current state, see fleet health at a glance.</p>
+
+    <div class="fleet-summary" id="fleetSummary"></div>
+
+    <table class="disk-table" id="diskTable">
+      <thead>
+        <tr>
+          <th class="name-col">Disk / Volume</th>
+          <th class="compact-col">Free (GB)</th>
+          <th class="compact-col">Capacity (GB)</th>
+          <th class="compact-col">Free %</th>
+          <th class="compact-col">Free (TB)</th>
+          <th class="compact-col">Cap (TB)</th>
+          <th style="width:42px;"></th>
+        </tr>
+      </thead>
+      <tbody id="diskBody"></tbody>
+      <tfoot>
+        <tr class="totals-row">
+          <td>Totals</td>
+          <td id="totFreeGB">—</td>
+          <td id="totCapGB">—</td>
+          <td id="totPct">—</td>
+          <td id="totFreeTB">—</td>
+          <td id="totCapTB">—</td>
+          <td></td>
+        </tr>
+      </tfoot>
+    </table>
+
+    <div class="toolbar">
+      <button class="btn btn-primary" id="btnAddDisk" type="button">+ Add disk</button>
+      <button class="btn btn-ghost"   id="btnExportCSV" type="button">Export CSV</button>
+      <button class="btn btn-ghost"   id="btnClearDisks" type="button">Clear all</button>
+    </div>
+
+    <details class="expander">
+      <summary>Bulk import from PowerShell or CSV</summary>
+      <div class="ex-body">
+        <p style="color: var(--text-muted); font-size: 13px; margin: 6px 0 8px 0;">
+          The parser accepts: CSV with header <code>Name,FreeGB,CapacityGB</code>, raw <code>Get-PSDrive</code> table output, or raw <code>Get-Volume</code> table output.
+        </p>
+        <p style="font-size: 13px; margin: 0 0 6px 0;">Recommended PowerShell:</p>
+        <div class="code-block">Get-Volume | Where-Object DriveLetter | Select-Object @{N='Name';E={$_.DriveLetter+':\'}}, @{N='FreeGB';E={[math]::Round($_.SizeRemaining/1GB,2)}}, @{N='CapacityGB';E={[math]::Round($_.Size/1GB,2)}} | ConvertTo-Csv -NoTypeInformation</div>
+        <textarea class="import-area" id="importArea" placeholder="Paste output here..."></textarea>
+        <div class="toolbar">
+          <button class="btn btn-primary btn-small" id="btnParseImport" type="button">Parse &amp; preview</button>
+          <button class="btn btn-ghost btn-small"   id="btnAppendImport" type="button" disabled>Append to table</button>
+          <button class="btn btn-ghost btn-small"   id="btnReplaceImport" type="button" disabled>Replace table</button>
+        </div>
+        <div class="import-feedback" id="importFeedback"></div>
+      </div>
+    </details>
+  </section>
+
+  <!-- Section 3: Unit Converter -->
+  <section class="card">
+    <h2>Unit Converter</h2>
+    <p class="card-sub">Convert between MB, GB, and TB. Uses the unit base selected in the settings bar.</p>
+    <div class="converter-grid">
+      <div class="input-group">
+        <label for="convMB">MB</label>
+        <input type="number" id="convMB" step="0.01">
+      </div>
+      <div class="input-group">
+        <label for="convGB">GB</label>
+        <input type="number" id="convGB" step="0.01">
+      </div>
+      <div class="input-group">
+        <label for="convTB">TB</label>
+        <input type="number" id="convTB" step="0.0001">
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 4: Presets / Saved Scenarios -->
+  <section class="card">
+    <h2>Saved Scenarios</h2>
+    <p class="card-sub">Save the current state (planner inputs, disks, thresholds, unit base) under a name and reload it later. Stored in Cosmos DB when signed in, or in your browser's local storage otherwise.</p>
+    <div id="modeBanner" class="mode-banner" hidden></div>
+    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:14px;">
+      <input type="text" id="presetName" placeholder="Scenario name (e.g. Production File Servers)"
+             style="flex: 1 1 260px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text); font-family: inherit; font-size: 14px;">
+      <button class="btn btn-primary" id="btnSavePreset" type="button">Save current state</button>
+    </div>
+    <table class="preset-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th style="width:160px;">Saved</th>
+          <th style="width:100px;">Disks</th>
+          <th style="width:180px;"></th>
+        </tr>
+      </thead>
+      <tbody id="presetBody">
+        <tr><td colspan="4" style="text-align:center; color: var(--text-muted); padding: 16px;">No saved scenarios yet.</td></tr>
+      </tbody>
+    </table>
+  </section>
+</main>
+
+<footer class="appfoot">
+  BITbyBIT &middot; Disk Space Calculator v0.2
+  <div class="muted">Runs entirely in your browser &middot; No data leaves this page</div>
+</footer>
+
+<script>
+// ===== Theme =====
+(function initTheme() {
+  const saved = localStorage.getItem('bbb-theme')
+    || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  document.documentElement.setAttribute('data-theme', saved);
+})();
+document.getElementById('themeToggle').addEventListener('click', () => {
+  const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('bbb-theme', next);
+});
+
+// ===== Settings =====
+const SETTINGS_KEY = 'bbb-disk-settings';
+const PRESETS_KEY  = 'bbb-disk-presets';
+
+let settings = {
+  warnPct: 20,   // %
+  critPct: 10,   // %
+  unitBase: 1024 // 1024 (binary) or 1000 (decimal)
+};
+
+function loadSettings() {
+  try {
+    const s = JSON.parse(localStorage.getItem(SETTINGS_KEY) || 'null');
+    if (s) settings = { ...settings, ...s };
+  } catch {}
+  document.getElementById('setWarn').value  = settings.warnPct;
+  document.getElementById('setCrit').value  = settings.critPct;
+  document.getElementById('setBase').value  = settings.unitBase;
+}
+
+function saveSettings() {
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+}
+
+function onSettingsChange() {
+  settings.warnPct  = +document.getElementById('setWarn').value || 20;
+  settings.critPct  = +document.getElementById('setCrit').value || 10;
+  settings.unitBase = +document.getElementById('setBase').value || 1024;
+  if (settings.critPct >= settings.warnPct) {
+    // keep order sane but don't block — just warn visually
+  }
+  saveSettings();
+  calcPlanner();
+  calcReverse();
+  calcForecast();
+  renderDisks();
+  syncConverter('GB');
+}
+
+['setWarn','setCrit','setBase'].forEach(id => {
+  document.getElementById(id).addEventListener('change', onSettingsChange);
+  document.getElementById(id).addEventListener('input', onSettingsChange);
+});
+document.getElementById('btnResetSettings').addEventListener('click', () => {
+  settings = { warnPct: 20, critPct: 10, unitBase: 1024 };
+  loadSettings();
+  onSettingsChange();
+});
+
+// ===== Helpers =====
+const GBperTB = () => settings.unitBase;
+const MBperGB = () => settings.unitBase;
+const fmt = (n, dp = 2) => {
+  if (n === null || n === undefined || !isFinite(n)) return '—';
+  return n.toLocaleString(undefined, { minimumFractionDigits: dp, maximumFractionDigits: dp });
+};
+const fmtPct = (n) => isFinite(n) ? (n * 100).toFixed(2) + '%' : '—';
+const num = (id) => {
+  const v = parseFloat(document.getElementById(id).value);
+  return isNaN(v) ? 0 : v;
+};
+const setText = (id, txt) => { const el = document.getElementById(id); if (el) el.textContent = txt; };
+const setHTML = (id, html) => { const el = document.getElementById(id); if (el) el.innerHTML = html; };
+const round = (n, dp) => {
+  const f = Math.pow(10, dp);
+  return Math.round(n * f) / f;
+};
+const escapeHtml = (s) => String(s).replace(/[&<>"']/g, c => ({
+  '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+}[c]));
+
+function severity(pct) {
+  if (!isFinite(pct)) return 'warn';
+  if (pct * 100 < settings.critPct) return 'crit';
+  if (pct * 100 < settings.warnPct) return 'warn';
+  return 'ok';
+}
+
+function deltaText(d, unit) {
+  if (!isFinite(d)) return '—';
+  if (d === 0) return `0 ${unit}`;
+  return `${d > 0 ? '+' : ''}${fmt(d)} ${unit}`;
+}
+
+function fmtDays(days) {
+  if (!isFinite(days) || days < 0) return '—';
+  if (days < 1) return '< 1 day';
+  if (days < 60) return `${Math.round(days)} days`;
+  if (days < 730) return `${Math.round(days)} days (${(days/30.44).toFixed(1)} months)`;
+  return `${Math.round(days)} days (${(days/365.25).toFixed(1)} years)`;
+}
+
+function projectDate(days) {
+  if (!isFinite(days) || days < 0) return '—';
+  const d = new Date(Date.now() + days * 86400000);
+  return d.toISOString().split('T')[0];
+}
+
+// ===== Subtabs =====
+document.querySelectorAll('.subtab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const target = btn.dataset.target;
+    document.querySelectorAll('.subtab').forEach(b => b.classList.toggle('active', b === btn));
+    document.querySelectorAll('.pane').forEach(p => p.hidden = (p.id !== target));
+  });
+});
+
+// ===== Section 1a: Forward Plan =====
+function calcPlanner() {
+  const free = num('inpFree');
+  const cap  = num('inpCap');
+  const add  = num('inpAdd');
+
+  const curPct  = cap > 0 ? free / cap : NaN;
+  const newCap  = cap + add;
+  const newFree = free + add;
+  const newPct  = newCap > 0 ? newFree / newCap : NaN;
+  const curUsed = cap - free;
+  const newUsed = newCap - newFree;
+
+  setText('outCurPct', fmtPct(curPct));
+  setText('outCurDetail', `${fmt(free)} GB free of ${fmt(cap)} GB`);
+  setText('outNewPct', fmtPct(newPct));
+  setText('outNewDetail', `${fmt(newFree)} GB free of ${fmt(newCap)} GB`);
+
+  const curBar = document.getElementById('outCurBar');
+  const newBar = document.getElementById('outNewBar');
+  curBar.className = 'progress ' + severity(curPct);
+  newBar.className = 'progress ' + severity(newPct);
+  curBar.firstElementChild.style.width = (Math.min(Math.max(curPct || 0, 0), 1) * 100) + '%';
+  newBar.firstElementChild.style.width = (Math.min(Math.max(newPct || 0, 0), 1) * 100) + '%';
+
+  const tb = GBperTB();
+  setText('rowFreeCur',  `${fmt(free)} GB · ${fmt(free / tb, 3)} TB`);
+  setText('rowFreeNew',  `${fmt(newFree)} GB · ${fmt(newFree / tb, 3)} TB`);
+  setText('rowFreeDelta', deltaText(newFree - free, 'GB'));
+
+  setText('rowCapCur',  `${fmt(cap)} GB · ${fmt(cap / tb, 3)} TB`);
+  setText('rowCapNew',  `${fmt(newCap)} GB · ${fmt(newCap / tb, 3)} TB`);
+  setText('rowCapDelta', deltaText(newCap - cap, 'GB'));
+
+  setText('rowUsedCur',  `${fmt(curUsed)} GB · ${fmt(curUsed / tb, 3)} TB`);
+  setText('rowUsedNew',  `${fmt(newUsed)} GB · ${fmt(newUsed / tb, 3)} TB`);
+  setText('rowUsedDelta', deltaText(newUsed - curUsed, 'GB'));
+
+  setText('rowPctCur', fmtPct(curPct));
+  setText('rowPctNew', fmtPct(newPct));
+  const deltaPct = (newPct - curPct);
+  const cell = document.getElementById('rowPctDelta');
+  if (!isFinite(deltaPct)) {
+    cell.textContent = '—'; cell.className = '';
+  } else {
+    cell.textContent = (deltaPct >= 0 ? '+' : '') + (deltaPct * 100).toFixed(2) + ' pp';
+    cell.className = deltaPct > 0 ? 'delta-pos' : (deltaPct < 0 ? 'delta-neg' : '');
+  }
+}
+['inpFree','inpCap','inpAdd'].forEach(id => {
+  document.getElementById(id).addEventListener('input', calcPlanner);
+});
+
+// ===== Section 1b: Reverse Calc =====
+function calcReverse() {
+  const free   = num('rvFree');
+  const cap    = num('rvCap');
+  const target = num('rvTarget') / 100; // user enters %, e.g. 25
+
+  const curPct = cap > 0 ? free / cap : NaN;
+  setText('rvNowFree', `${fmt(free)} GB`);
+  setText('rvNowCap',  `${fmt(cap)} GB`);
+  setText('rvNowPct',  fmtPct(curPct));
+
+  if (target >= 1) {
+    setText('rvResult', '—');
+    setText('rvDetail', 'Target must be below 100% (impossible to reach exactly).');
+    setText('rvAfterFree','—'); setText('rvAfterCap','—'); setText('rvAfterPct','—');
+    return;
+  }
+  if (target < 0) {
+    setText('rvResult', '—');
+    setText('rvDetail', 'Target must be 0% or greater.');
+    setText('rvAfterFree','—'); setText('rvAfterCap','—'); setText('rvAfterPct','—');
+    return;
+  }
+  if (cap <= 0) {
+    setText('rvResult', '—');
+    setText('rvDetail', 'Enter a capacity greater than 0.');
+    setText('rvAfterFree','—'); setText('rvAfterCap','—'); setText('rvAfterPct','—');
+    return;
+  }
+
+  if (curPct >= target) {
+    const surplus = free - target * cap;
+    setText('rvResult', 'No storage needed');
+    setText('rvDetail', `Already at ${fmtPct(curPct)} (target ${(target*100).toFixed(2)}%). Surplus: ${fmt(surplus)} GB above the target threshold.`);
+    setText('rvAfterFree', `${fmt(free)} GB`);
+    setText('rvAfterCap',  `${fmt(cap)} GB`);
+    setText('rvAfterPct',  fmtPct(curPct));
+    return;
+  }
+
+  const x = (target * cap - free) / (1 - target);
+  const newCap  = cap + x;
+  const newFree = free + x;
+  setText('rvResult', `Add ${fmt(x)} GB`);
+  setText('rvDetail', `Equivalent: ${fmt(x / GBperTB(), 3)} TB. New total capacity will be ${fmt(newCap)} GB (${fmt(newCap / GBperTB(), 3)} TB).`);
+  setText('rvAfterFree', `${fmt(newFree)} GB`);
+  setText('rvAfterCap',  `${fmt(newCap)} GB`);
+  setText('rvAfterPct',  fmtPct(newFree / newCap));
+}
+['rvFree','rvCap','rvTarget'].forEach(id => {
+  document.getElementById(id).addEventListener('input', calcReverse);
+});
+
+// ===== Section 1c: Growth Forecast =====
+let historyPoints = [
+  { date: '', free: '' },
+  { date: '', free: '' }
+];
+
+function renderHistory() {
+  const body = document.getElementById('histBody');
+  body.innerHTML = '';
+  historyPoints.forEach((p, i) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><input type="date" data-i="${i}" data-k="date" value="${p.date || ''}"></td>
+      <td><input type="number" step="0.01" data-i="${i}" data-k="free" value="${p.free === '' ? '' : p.free}" placeholder="GB"></td>
+      <td><button class="btn-icon" type="button" data-del="${i}" aria-label="Remove">✕</button></td>
+    `;
+    body.appendChild(tr);
+  });
+  body.querySelectorAll('input').forEach(inp => {
+    inp.addEventListener('input', (e) => {
+      const i = +e.target.dataset.i;
+      const k = e.target.dataset.k;
+      const v = e.target.value;
+      if (k === 'date') historyPoints[i].date = v;
+      else historyPoints[i].free = (v === '' ? '' : parseFloat(v));
+      computeHistoryGrowth();
+    });
+  });
+  body.querySelectorAll('button[data-del]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      historyPoints.splice(+e.currentTarget.dataset.del, 1);
+      renderHistory();
+      computeHistoryGrowth();
+    });
+  });
+}
+
+function computeHistoryGrowth() {
+  const valid = historyPoints
+    .filter(p => p.date && p.free !== '' && isFinite(p.free))
+    .map(p => ({ d: new Date(p.date), f: +p.free }))
+    .filter(p => !isNaN(p.d.getTime()))
+    .sort((a, b) => a.d - b.d);
+
+  if (valid.length < 2) {
+    setText('histGrowth', 'need ≥ 2 points');
+    return null;
+  }
+  const first = valid[0], last = valid[valid.length - 1];
+  const days = (last.d - first.d) / 86400000;
+  if (days <= 0) {
+    setText('histGrowth', 'need distinct dates');
+    return null;
+  }
+  // free should decrease over time if disk is filling — positive growth = consumption rate
+  const rate = (first.f - last.f) / days;
+  setText('histGrowth', `${rate >= 0 ? '+' : ''}${rate.toFixed(2)} GB/day`);
+  return rate;
+}
+
+document.getElementById('btnAddHist').addEventListener('click', () => {
+  historyPoints.push({ date: '', free: '' });
+  renderHistory();
+});
+document.getElementById('btnApplyGrowth').addEventListener('click', () => {
+  const r = computeHistoryGrowth();
+  if (r !== null && isFinite(r)) {
+    document.getElementById('fcGrowth').value = round(r, 2);
+    calcForecast();
+  }
+});
+
+function calcForecast() {
+  const free   = num('fcFree');
+  const cap    = num('fcCap');
+  const growth = num('fcGrowth');
+  const body = document.getElementById('fcastBody');
+  body.innerHTML = '';
+
+  const thresholds = [
+    { label: 'Warning (' + settings.warnPct + '% free)', pct: settings.warnPct / 100, cls: 'warn' },
+    { label: 'Critical (' + settings.critPct + '% free)', pct: settings.critPct / 100, cls: 'crit' },
+    { label: '5% free',  pct: 0.05, cls: 'crit' },
+    { label: '0% (full)', pct: 0.00, cls: 'crit' }
+  ];
+
+  if (cap <= 0) {
+    body.innerHTML = '<tr><td colspan="4" style="text-align:center; color: var(--text-muted);">Enter a capacity greater than 0.</td></tr>';
+    return;
+  }
+
+  thresholds.forEach(t => {
+    const targetFreeGB = cap * t.pct;
+    const gbUntil = free - targetFreeGB;
+    let daysCell, dateCell;
+    if (gbUntil <= 0) {
+      daysCell = '<span class="badge crit">already reached</span>';
+      dateCell = '—';
+    } else if (growth <= 0) {
+      daysCell = growth === 0 ? '∞ (no growth)' : 'free space is growing';
+      dateCell = '—';
+    } else {
+      const days = gbUntil / growth;
+      daysCell = fmtDays(days);
+      dateCell = projectDate(days);
+    }
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><span class="badge ${t.cls}">${escapeHtml(t.label)}</span></td>
+      <td>${fmt(targetFreeGB)} GB</td>
+      <td>${daysCell}</td>
+      <td>${dateCell}</td>
+    `;
+    body.appendChild(tr);
+  });
+}
+['fcFree','fcCap','fcGrowth'].forEach(id => {
+  document.getElementById(id).addEventListener('input', calcForecast);
+});
+
+// ===== Section 2: Multi-Disk Aggregator =====
+let disks = [
+  { name: 'C:\\',      free: 32.86,  cap: 228.88 },
+  { name: 'D:\\ Data', free: 390.77, cap: 1000   }
+];
+
+function renderDisks() {
+  const body = document.getElementById('diskBody');
+  body.innerHTML = '';
+  const tb = GBperTB();
+  disks.forEach((d, i) => {
+    const tr = document.createElement('tr');
+    const pct = d.cap > 0 ? d.free / d.cap : NaN;
+    const sev = severity(pct);
+    tr.innerHTML = `
+      <td><input type="text" class="name-input" data-i="${i}" data-k="name" value="${escapeHtml(d.name)}"></td>
+      <td><input type="number" step="0.01" data-i="${i}" data-k="free" value="${d.free}"></td>
+      <td><input type="number" step="0.01" data-i="${i}" data-k="cap"  value="${d.cap}"></td>
+      <td><span class="badge ${sev}">${fmtPct(pct)}</span></td>
+      <td>${fmt(d.free / tb, 3)}</td>
+      <td>${fmt(d.cap  / tb, 3)}</td>
+      <td><button class="btn-icon" type="button" data-del="${i}" aria-label="Remove disk">✕</button></td>
+    `;
+    body.appendChild(tr);
+  });
+  body.querySelectorAll('input').forEach(inp => {
+    inp.addEventListener('input', (e) => {
+      const i = +e.target.dataset.i;
+      const k = e.target.dataset.k;
+      const v = e.target.value;
+      if (k === 'name') disks[i].name = v;
+      else disks[i][k] = parseFloat(v) || 0;
+      patchRow(i);
+      patchTotals();
+      renderFleetSummary();
+    });
+  });
+  body.querySelectorAll('button[data-del]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      disks.splice(+e.currentTarget.dataset.del, 1);
+      renderDisks();
+    });
+  });
+  patchTotals();
+  renderFleetSummary();
+}
+
+function patchRow(i) {
+  const tr = document.querySelectorAll('#diskBody tr')[i];
+  if (!tr) return;
+  const d = disks[i];
+  const pct = d.cap > 0 ? d.free / d.cap : NaN;
+  const sev = severity(pct);
+  const cells = tr.querySelectorAll('td');
+  cells[3].innerHTML = `<span class="badge ${sev}">${fmtPct(pct)}</span>`;
+  cells[4].textContent = fmt(d.free / GBperTB(), 3);
+  cells[5].textContent = fmt(d.cap  / GBperTB(), 3);
+}
+
+function patchTotals() {
+  const tFree = disks.reduce((s, d) => s + (d.free || 0), 0);
+  const tCap  = disks.reduce((s, d) => s + (d.cap  || 0), 0);
+  const tPct  = tCap > 0 ? tFree / tCap : NaN;
+  const tb = GBperTB();
+  setText('totFreeGB', fmt(tFree) + ' GB');
+  setText('totCapGB',  fmt(tCap)  + ' GB');
+  setText('totFreeTB', fmt(tFree / tb, 3) + ' TB');
+  setText('totCapTB',  fmt(tCap  / tb, 3) + ' TB');
+  setText('totPct',    fmtPct(tPct));
+}
+
+function renderFleetSummary() {
+  const el = document.getElementById('fleetSummary');
+  const counts = { ok: 0, warn: 0, crit: 0 };
+  disks.forEach(d => {
+    const p = d.cap > 0 ? d.free / d.cap : NaN;
+    counts[severity(p)]++;
+  });
+  const tFree = disks.reduce((s, d) => s + (d.free || 0), 0);
+  const tCap  = disks.reduce((s, d) => s + (d.cap  || 0), 0);
+  const tPct  = tCap > 0 ? tFree / tCap : NaN;
+  const overallCls = severity(tPct);
+
+  el.innerHTML = `
+    <div class="metric-card"><div class="metric-label">Disks</div><div class="metric-val">${disks.length}</div></div>
+    <div class="metric-card"><div class="metric-label">Healthy</div><div class="metric-val ok">${counts.ok}</div></div>
+    <div class="metric-card"><div class="metric-label">Warning</div><div class="metric-val warn">${counts.warn}</div></div>
+    <div class="metric-card"><div class="metric-label">Critical</div><div class="metric-val crit">${counts.crit}</div></div>
+    <div class="metric-card"><div class="metric-label">Overall Free</div><div class="metric-val ${overallCls}">${fmtPct(tPct)}</div></div>
+  `;
+}
+
+document.getElementById('btnAddDisk').addEventListener('click', () => {
+  disks.push({ name: 'New disk', free: 0, cap: 0 });
+  renderDisks();
+});
+document.getElementById('btnClearDisks').addEventListener('click', () => {
+  if (confirm('Clear all disks?')) { disks = []; renderDisks(); }
+});
+document.getElementById('btnExportCSV').addEventListener('click', exportDisksCSV);
+
+function exportDisksCSV() {
+  const lines = ['Name,FreeGB,CapacityGB,FreePct,FreeTB,CapacityTB'];
+  const tb = GBperTB();
+  disks.forEach(d => {
+    const pct = d.cap > 0 ? d.free / d.cap : NaN;
+    const csvName = '"' + String(d.name).replace(/"/g, '""') + '"';
+    lines.push(`${csvName},${round(d.free, 2)},${round(d.cap, 2)},${isFinite(pct) ? round(pct*100, 2) : ''},${round(d.free/tb, 3)},${round(d.cap/tb, 3)}`);
+  });
+  const blob = new Blob([lines.join('\n')], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const date = new Date().toISOString().split('T')[0];
+  a.href = url;
+  a.download = `disk-report-${date}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// ===== Bulk import parser =====
+let pendingImport = [];
+
+function unitToGB(n, unit) {
+  const u = (unit || 'GB').toUpperCase();
+  switch (u) {
+    case 'B':  return n / 1024 / 1024 / 1024;
+    case 'KB': return n / 1024 / 1024;
+    case 'MB': return n / 1024;
+    case 'GB': return n;
+    case 'TB': return n * 1024;
+    case 'PB': return n * 1024 * 1024;
+    default:   return n;
+  }
+}
+
+function parseImportText(text) {
+  if (!text) return { rows: [], format: 'empty' };
+  const allLines = text.split(/\r?\n/).map(l => l.trim());
+  const lines = allLines.filter(l => l && !/^-{2,}/.test(l) && !/^={2,}/.test(l));
+  if (lines.length === 0) return { rows: [], format: 'empty' };
+
+  // Format 1: CSV with header (contains a comma and one header includes a recognizable token)
+  if (lines[0].includes(',')) {
+    return { rows: parseCSV(lines), format: 'CSV' };
+  }
+  // Format 2: tab-separated with header
+  if (lines[0].includes('\t')) {
+    return { rows: parseTSV(lines), format: 'TSV' };
+  }
+
+  // Format 3: Get-PSDrive table
+  if (/\bused\b/i.test(lines[0]) && /\bfree\b/i.test(lines[0])) {
+    return { rows: parseGetPSDrive(lines), format: 'Get-PSDrive' };
+  }
+  // Format 4: Get-Volume table (has DriveLetter / FriendlyName / Size / SizeRemaining)
+  if (/driveletter|sizeremaining|friendlyname/i.test(lines[0])) {
+    return { rows: parseGetVolume(lines), format: 'Get-Volume' };
+  }
+  // Fallback — try whitespace-split with at least 3 numeric-looking columns
+  return { rows: parseLoose(lines), format: 'whitespace (best-effort)' };
+}
+
+function findHeaderIdx(header, candidates) {
+  const lower = header.map(h => h.toLowerCase().replace(/[^a-z]/g, ''));
+  for (const c of candidates) {
+    const i = lower.indexOf(c);
+    if (i !== -1) return i;
+  }
+  return -1;
+}
+
+function parseCSV(lines) {
+  // Simple CSV parser supporting quoted fields
+  const parseLine = (line) => {
+    const out = [];
+    let cur = '', inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const c = line[i];
+      if (inQ) {
+        if (c === '"' && line[i+1] === '"') { cur += '"'; i++; }
+        else if (c === '"') { inQ = false; }
+        else cur += c;
+      } else {
+        if (c === ',') { out.push(cur); cur = ''; }
+        else if (c === '"') { inQ = true; }
+        else cur += c;
+      }
+    }
+    out.push(cur);
+    return out.map(s => s.trim());
+  };
+  const header = parseLine(lines[0]);
+  const nameIdx = findHeaderIdx(header, ['name','disk','volume','driveletter','root','path']);
+  const freeIdx = findHeaderIdx(header, ['freegb','free','freespace','sizeremaining','available']);
+  const capIdx  = findHeaderIdx(header, ['capacitygb','capacity','total','size','totalsize','sizegb']);
+  if (freeIdx === -1 || capIdx === -1) return [];
+  const rows = [];
+  for (let i = 1; i < lines.length; i++) {
+    const cells = parseLine(lines[i]);
+    const name = nameIdx !== -1 ? (cells[nameIdx] || `Disk ${i}`) : `Disk ${i}`;
+    const free = parseFloat(cells[freeIdx]);
+    const cap  = parseFloat(cells[capIdx]);
+    if (isFinite(free) && isFinite(cap)) rows.push({ name, free, cap });
+  }
+  return rows;
+}
+
+function parseTSV(lines) {
+  // Convert tabs to commas and reuse CSV
+  return parseCSV(lines.map(l => l.replace(/\t/g, ',')));
+}
+
+function parseGetPSDrive(lines) {
+  // Header is like: Name  Used (GB)  Free (GB)  Provider  CurrentLocation  Root
+  // Numeric values are already in GB.
+  const rows = [];
+  for (let i = 1; i < lines.length; i++) {
+    const parts = lines[i].split(/\s+/);
+    if (parts.length < 3) continue;
+    // Find numeric tokens — Used and Free are typically the next two after Name
+    let nameTok = parts[0];
+    // Look for two consecutive numeric tokens after the name
+    let used = NaN, free = NaN, foundAt = -1;
+    for (let j = 1; j < parts.length - 1; j++) {
+      const a = parseFloat(parts[j]);
+      const b = parseFloat(parts[j+1]);
+      if (isFinite(a) && isFinite(b)) { used = a; free = b; foundAt = j; break; }
+    }
+    if (!isFinite(used) || !isFinite(free)) continue;
+    // Find root (last token that contains : or \ )
+    let root = parts.slice(foundAt + 2).find(p => /[:\\]/.test(p)) || (nameTok + ':\\');
+    rows.push({ name: root, free, cap: used + free });
+  }
+  return rows;
+}
+
+function parseGetVolume(lines) {
+  // Match trailing two "<num> <unit>" pairs which represent SizeRemaining then Size
+  const rows = [];
+  for (let i = 1; i < lines.length; i++) {
+    const m = lines[i].match(/([\d.]+)\s+(B|KB|MB|GB|TB|PB)\s+([\d.]+)\s+(B|KB|MB|GB|TB|PB)\s*$/i);
+    if (!m) continue;
+    const free = unitToGB(parseFloat(m[1]), m[2]);
+    const cap  = unitToGB(parseFloat(m[3]), m[4]);
+    if (!isFinite(free) || !isFinite(cap)) continue;
+    const driveMatch = lines[i].match(/^([A-Z])\s/i);
+    const name = driveMatch ? driveMatch[1].toUpperCase() + ':\\' : `Volume ${i}`;
+    rows.push({ name, free, cap });
+  }
+  return rows;
+}
+
+function parseLoose(lines) {
+  // Best-effort: skip header line, look for name + 2 numbers per row
+  const rows = [];
+  for (let i = 1; i < lines.length; i++) {
+    const parts = lines[i].split(/\s+/);
+    if (parts.length < 3) continue;
+    // Find last two numeric tokens
+    const nums = [];
+    const tokenIdx = [];
+    parts.forEach((p, idx) => {
+      const v = parseFloat(p);
+      if (isFinite(v) && /^[\d.\-]+$/.test(p)) { nums.push(v); tokenIdx.push(idx); }
+    });
+    if (nums.length < 2) continue;
+    const free = nums[nums.length - 2];
+    const cap  = nums[nums.length - 1];
+    const name = parts.slice(0, tokenIdx[tokenIdx.length - 2]).join(' ').trim() || `Disk ${i}`;
+    rows.push({ name, free, cap });
+  }
+  return rows;
+}
+
+document.getElementById('btnParseImport').addEventListener('click', () => {
+  const text = document.getElementById('importArea').value;
+  const result = parseImportText(text);
+  pendingImport = result.rows;
+  const fb = document.getElementById('importFeedback');
+  if (pendingImport.length === 0) {
+    fb.className = 'import-feedback crit';
+    fb.textContent = `No rows recognized (detected format: ${result.format}). Try the recommended PowerShell command above.`;
+    document.getElementById('btnAppendImport').disabled = true;
+    document.getElementById('btnReplaceImport').disabled = true;
+  } else {
+    fb.className = 'import-feedback ok';
+    const preview = pendingImport.slice(0, 3).map(r => `${r.name}: ${fmt(r.free)} / ${fmt(r.cap)} GB`).join('  ·  ');
+    const more = pendingImport.length > 3 ? `  ·  +${pendingImport.length - 3} more` : '';
+    fb.textContent = `Parsed ${pendingImport.length} row(s) as ${result.format}. ${preview}${more}`;
+    document.getElementById('btnAppendImport').disabled = false;
+    document.getElementById('btnReplaceImport').disabled = false;
+  }
+});
+
+document.getElementById('btnAppendImport').addEventListener('click', () => {
+  if (pendingImport.length === 0) return;
+  disks = disks.concat(pendingImport.map(d => ({ ...d })));
+  renderDisks();
+  document.getElementById('importFeedback').textContent =
+    `Appended ${pendingImport.length} disk(s) to the table.`;
+});
+
+document.getElementById('btnReplaceImport').addEventListener('click', () => {
+  if (pendingImport.length === 0) return;
+  if (!confirm(`Replace all ${disks.length} current row(s) with ${pendingImport.length} imported row(s)?`)) return;
+  disks = pendingImport.map(d => ({ ...d }));
+  renderDisks();
+  document.getElementById('importFeedback').textContent =
+    `Replaced table with ${pendingImport.length} disk(s).`;
+});
+
+// ===== Section 3: Unit Converter =====
+function syncConverter(src) {
+  const MB = document.getElementById('convMB');
+  const GB = document.getElementById('convGB');
+  const TB = document.getElementById('convTB');
+  const base = settings.unitBase;
+  let mb, gb, tb;
+  if (src === 'MB') {
+    mb = parseFloat(MB.value) || 0;
+    gb = mb / base; tb = gb / base;
+  } else if (src === 'GB') {
+    gb = parseFloat(GB.value) || 0;
+    mb = gb * base; tb = gb / base;
+  } else {
+    tb = parseFloat(TB.value) || 0;
+    gb = tb * base; mb = gb * base;
+  }
+  if (src !== 'MB') MB.value = mb ? round(mb, 2) : '';
+  if (src !== 'GB') GB.value = gb ? round(gb, 4) : '';
+  if (src !== 'TB') TB.value = tb ? round(tb, 6) : '';
+}
+document.getElementById('convMB').addEventListener('input', () => syncConverter('MB'));
+document.getElementById('convGB').addEventListener('input', () => syncConverter('GB'));
+document.getElementById('convTB').addEventListener('input', () => syncConverter('TB'));
+
+// ===== Section 4: Saved Scenarios (Cosmos DB + localStorage fallback) =====
+//
+// Mode detection: on init, fetch /.auth/me to discover the runtime context.
+//   'cloud'  → on Azure SWA, signed in.   Use REST API → Cosmos DB.
+//   'unauth' → on Azure SWA, not signed in. Use localStorage + offer sign-in.
+//   'local'  → standalone (file:// or non-SWA host).  Use localStorage.
+// Local scenarios have IDs like "local-<ts>"; cloud scenarios get UUIDs from the API.
+
+let appMode = 'local';
+let currentUser = null;
+let _scenarioCache = [];
+
+async function detectMode() {
+  try {
+    const r = await fetch('/.auth/me', { headers: { 'Accept': 'application/json' } });
+    if (!r.ok) return { mode: 'local' };
+    const data = await r.json();
+    if (data && data.clientPrincipal) {
+      return { mode: 'cloud', user: data.clientPrincipal };
+    }
+    return { mode: 'unauth' };
+  } catch {
+    return { mode: 'local' };
+  }
+}
+
+function renderAuthState() {
+  const el = document.getElementById('authState');
+  if (!el) return;
+  if (appMode === 'cloud') {
+    const name = (currentUser && currentUser.userDetails) || 'signed in';
+    el.innerHTML = `<span class="auth-user" title="${escapeHtml(name)}">${escapeHtml(name)}</span><a href="/.auth/logout" class="auth-link">Sign out</a>`;
+  } else if (appMode === 'unauth') {
+    el.innerHTML = `<a href="/.auth/login/aad" class="auth-link auth-cta">Sign in to sync</a>`;
+  } else {
+    el.innerHTML = '';
+  }
+}
+
+function renderModeBanner() {
+  const el = document.getElementById('modeBanner');
+  if (!el) return;
+  if (appMode === 'cloud') {
+    const name = (currentUser && currentUser.userDetails) || 'your account';
+    el.hidden = false;
+    el.className = 'mode-banner cloud';
+    el.textContent = `Cloud sync enabled — scenarios are saved to Cosmos DB under ${name} and available on any device you sign into.`;
+  } else if (appMode === 'unauth') {
+    el.hidden = false;
+    el.className = 'mode-banner unauth';
+    el.innerHTML = `Scenarios are saved in this browser only. <a href="/.auth/login/aad" style="color: var(--text-heading); font-weight: 600;">Sign in</a> to enable cross-device sync via Cosmos DB.`;
+  } else {
+    el.hidden = true;
+  }
+}
+
+// ----- Storage abstraction -----
+const presetStore = {
+  async list() {
+    if (appMode === 'cloud') {
+      const r = await fetch('/api/scenarios');
+      if (!r.ok) throw new Error(`List failed: HTTP ${r.status}`);
+      return r.json();
+    }
+    try { return JSON.parse(localStorage.getItem(PRESETS_KEY) || '[]'); }
+    catch { return []; }
+  },
+  async create(name, data) {
+    if (appMode === 'cloud') {
+      const r = await fetch('/api/scenarios', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, data })
+      });
+      if (!r.ok) throw new Error(`Save failed: HTTP ${r.status}`);
+      return r.json();
+    }
+    const list = JSON.parse(localStorage.getItem(PRESETS_KEY) || '[]');
+    const entry = {
+      id: 'local-' + Date.now().toString(36),
+      name, data,
+      savedAt: new Date().toISOString()
+    };
+    list.unshift(entry);
+    localStorage.setItem(PRESETS_KEY, JSON.stringify(list));
+    return entry;
+  },
+  async update(id, name, data) {
+    if (appMode === 'cloud') {
+      const r = await fetch('/api/scenarios/' + encodeURIComponent(id), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, data })
+      });
+      if (!r.ok) throw new Error(`Update failed: HTTP ${r.status}`);
+      return r.json();
+    }
+    const list = JSON.parse(localStorage.getItem(PRESETS_KEY) || '[]');
+    const idx = list.findIndex(p => p.id === id);
+    if (idx === -1) throw new Error('Scenario not found.');
+    list[idx] = { ...list[idx], name, data, savedAt: new Date().toISOString() };
+    localStorage.setItem(PRESETS_KEY, JSON.stringify(list));
+    return list[idx];
+  },
+  async remove(id) {
+    if (appMode === 'cloud') {
+      const r = await fetch('/api/scenarios/' + encodeURIComponent(id), { method: 'DELETE' });
+      if (!r.ok && r.status !== 204) throw new Error(`Delete failed: HTTP ${r.status}`);
+      return;
+    }
+    const list = JSON.parse(localStorage.getItem(PRESETS_KEY) || '[]');
+    localStorage.setItem(PRESETS_KEY, JSON.stringify(list.filter(p => p.id !== id)));
+  }
+};
+
+async function renderPresets() {
+  const body = document.getElementById('presetBody');
+  body.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:14px; color: var(--text-muted);">Loading...</td></tr>';
+
+  let list;
+  try {
+    list = await presetStore.list();
+  } catch (err) {
+    body.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:14px; color: var(--alert);">${escapeHtml(err.message)}</td></tr>`;
+    return;
+  }
+  _scenarioCache = list;
+
+  if (list.length === 0) {
+    body.innerHTML = '<tr><td colspan="4" style="text-align:center; color: var(--text-muted); padding: 16px;">No saved scenarios yet.</td></tr>';
+    return;
+  }
+
+  body.innerHTML = '';
+  list.forEach(p => {
+    const tr = document.createElement('tr');
+    const dt = new Date(p.savedAt);
+    const dateStr = isFinite(dt.getTime()) ? dt.toISOString().replace('T', ' ').substring(0, 16) : '—';
+    const diskCount = (p.data && p.data.disks) ? p.data.disks.length : 0;
+    tr.innerHTML = `
+      <td>${escapeHtml(p.name)}</td>
+      <td>${dateStr}</td>
+      <td>${diskCount}</td>
+      <td>
+        <button class="btn btn-primary btn-small" type="button" data-load="${escapeHtml(p.id)}">Load</button>
+        <button class="btn btn-ghost btn-small"   type="button" data-del="${escapeHtml(p.id)}" data-name="${escapeHtml(p.name)}">Delete</button>
+      </td>
+    `;
+    body.appendChild(tr);
+  });
+  body.querySelectorAll('button[data-load]').forEach(btn => {
+    btn.addEventListener('click', () => loadPresetById(btn.dataset.load));
+  });
+  body.querySelectorAll('button[data-del]').forEach(btn => {
+    btn.addEventListener('click', () => deletePresetById(btn.dataset.del, btn.dataset.name));
+  });
+}
+
+function buildCurrentSnapshot() {
+  return {
+    planner: {
+      free: num('inpFree'), cap: num('inpCap'), add: num('inpAdd')
+    },
+    reverse: {
+      free: num('rvFree'), cap: num('rvCap'), target: num('rvTarget')
+    },
+    forecast: {
+      free: num('fcFree'), cap: num('fcCap'), growth: num('fcGrowth'),
+      history: historyPoints.map(p => ({ date: p.date, free: p.free }))
+    },
+    disks: disks.map(d => ({ ...d })),
+    settings: { ...settings }
+  };
+}
+
+function applySnapshot(s) {
+  if (!s) return;
+  if (s.planner) {
+    document.getElementById('inpFree').value = s.planner.free ?? '';
+    document.getElementById('inpCap').value  = s.planner.cap  ?? '';
+    document.getElementById('inpAdd').value  = s.planner.add  ?? '';
+  }
+  if (s.reverse) {
+    document.getElementById('rvFree').value   = s.reverse.free   ?? '';
+    document.getElementById('rvCap').value    = s.reverse.cap    ?? '';
+    document.getElementById('rvTarget').value = s.reverse.target ?? '';
+  }
+  if (s.forecast) {
+    document.getElementById('fcFree').value   = s.forecast.free   ?? '';
+    document.getElementById('fcCap').value    = s.forecast.cap    ?? '';
+    document.getElementById('fcGrowth').value = s.forecast.growth ?? '';
+    if (Array.isArray(s.forecast.history)) {
+      historyPoints = s.forecast.history.map(p => ({ date: p.date || '', free: (p.free === '' || p.free == null) ? '' : p.free }));
+      if (historyPoints.length === 0) historyPoints = [{ date: '', free: '' }, { date: '', free: '' }];
+      renderHistory();
+    }
+  }
+  if (Array.isArray(s.disks)) {
+    disks = s.disks.map(d => ({ ...d }));
+  }
+  if (s.settings) {
+    settings = { ...settings, ...s.settings };
+    document.getElementById('setWarn').value  = settings.warnPct;
+    document.getElementById('setCrit').value  = settings.critPct;
+    document.getElementById('setBase').value  = settings.unitBase;
+    saveSettings();
+  }
+  calcPlanner();
+  calcReverse();
+  computeHistoryGrowth();
+  calcForecast();
+  renderDisks();
+  syncConverter('GB');
+}
+
+document.getElementById('btnSavePreset').addEventListener('click', async () => {
+  const nameEl = document.getElementById('presetName');
+  const name = (nameEl.value || '').trim();
+  if (!name) { nameEl.focus(); alert('Please enter a name for this scenario.'); return; }
+  const data = buildCurrentSnapshot();
+  const existing = _scenarioCache.find(p => p.name === name);
+  const btn = document.getElementById('btnSavePreset');
+  const origLabel = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Saving...';
+  try {
+    if (existing) {
+      if (!confirm(`A scenario named "${name}" already exists. Overwrite?`)) {
+        btn.disabled = false; btn.textContent = origLabel; return;
+      }
+      await presetStore.update(existing.id, name, data);
+    } else {
+      await presetStore.create(name, data);
+    }
+    nameEl.value = '';
+    await renderPresets();
+  } catch (err) {
+    alert(`Save failed: ${err.message}`);
+  } finally {
+    btn.disabled = false; btn.textContent = origLabel;
+  }
+});
+
+async function loadPresetById(id) {
+  const p = _scenarioCache.find(x => x.id === id);
+  if (!p) return;
+  applySnapshot(p.data);
+}
+
+async function deletePresetById(id, name) {
+  if (!confirm(`Delete saved scenario "${name}"?`)) return;
+  try {
+    await presetStore.remove(id);
+    await renderPresets();
+  } catch (err) {
+    alert(`Delete failed: ${err.message}`);
+  }
+}
+
+// ===== Initial Render =====
+(async function init() {
+  loadSettings();
+  document.getElementById('convGB').value = 500;
+  syncConverter('GB');
+  renderHistory();
+  calcPlanner();
+  calcReverse();
+  calcForecast();
+  renderDisks();
+
+  // Detect runtime mode (cloud / unauth / local) before loading scenarios
+  const detection = await detectMode();
+  appMode = detection.mode;
+  currentUser = detection.user || null;
+  renderAuthState();
+  renderModeBanner();
+  await renderPresets();
+})();
+</script>
+</body>
+</html>
